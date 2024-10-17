@@ -1,9 +1,6 @@
 import React from 'react';
-import { useState } from 'react';
 
-const InputTodo = () => {
-  const [description, setDescription] = useState('');
-
+const InputTodo = ({ description, setDescription, editMode, setEditMode }) => {
   const onChangeHandler = (e) => {
     setDescription(e.target.value);
   };
@@ -11,17 +8,29 @@ const InputTodo = () => {
   const onSubmitHandler = async (e) => {
     e.preventDefault();
     try {
-      console.log('You are beautiful');
       const body = { description };
-      const response = await fetch('http://localhost:5000/todos', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      });
 
-      console.log(response);
+      if (editMode) {
+        // Jika sedang dalam mode edit, lakukan update todo
+        await fetch(`http://localhost:5000/todos/${editMode}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        });
+        setEditMode(null); // Kembali ke mode normal setelah edit selesai
+      } else {
+        // Jika tidak dalam mode edit, lakukan penambahan todo baru
+        await fetch('http://localhost:5000/todos', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        });
+      }
+
       setDescription(''); // Reset input setelah submit
       window.location = '/';
     } catch (error) {

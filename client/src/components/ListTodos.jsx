@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import React from 'react';
 import IconCross from '../images/icon-cross.svg';
-import { CiEdit } from 'react-icons/ci';
 
-const ListTodos = () => {
+import EditTodo from './EditTodo';
+
+const ListTodos = ({ description, setDescription, setEditMode }) => {
   const [todos, setTodos] = useState([]);
 
   const onDeleteHandler = (id) => {
@@ -37,34 +38,34 @@ const ListTodos = () => {
   useEffect(() => {
     getTodos();
   }, []);
+
   return (
-    <div>
-      {/* yang benar */}
-      <div className="flex flex-col items-center ">
-        <div className="rounded-lg z-[2] overflow-hidden">
-          {todos.map((todo) => {
-            return (
-              <div
-                key={todo.todo_id}
-                className="relative border-b border-[#777a92] items-center  p-3 w-[327px] bg-[#25273c] text-[#cacde8] flex justify-between"
-              >
-                <p className="absolute border-[#777a92] bg-transparent border-2 w-5 h-5 rounded-full"></p>
-                <div className="flex w-full justify-between">
-                  <p className="pl-8">{todo.description}</p>
-                  <button className="mr-6">
-                    <CiEdit />
-                  </button>
-                </div>
-                <button
-                  className=""
-                  onClick={() => onDeleteHandler(todo.todo_id)}
-                >
-                  <img src={IconCross} alt="X" />
-                </button>
+    <div className="flex flex-col items-center ">
+      <div className="rounded-lg z-[2] overflow-hidden">
+        {todos.map((todo) => {
+          return (
+            <div
+              key={todo.todo_id}
+              className="relative border-b border-[#777a92] items-center  p-3 w-[327px] bg-[#25273c] text-[#cacde8] flex justify-between"
+            >
+              <p className="absolute border-[#777a92] bg-transparent border-2 w-5 h-5 rounded-full"></p>
+              <div className="flex w-full justify-between">
+                <p className="pl-8">{todo.description}</p>
+                <EditTodo
+                  todo={todo}
+                  setDescription={setDescription}
+                  setEditMode={setEditMode}
+                />
               </div>
-            );
-          })}
-        </div>
+              <button
+                className=""
+                onClick={() => onDeleteHandler(todo.todo_id)}
+              >
+                <img src={IconCross} alt="X" />
+              </button>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
