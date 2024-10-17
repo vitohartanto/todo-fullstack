@@ -30,7 +30,7 @@ const InputTodo = () => {
   };
 
   return (
-    <div className="flex justify-center w-full">
+    <div className="flex justify-center w-full mb-5">
       <form onSubmit={onSubmitHandler} className="relative">
         <p className="border-[#777a92] bg-transparent border-2 w-5 h-5 rounded-full absolute top-4 left-4"></p>
         <input
