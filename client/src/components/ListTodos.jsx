@@ -6,6 +6,7 @@ import EditTodo from './EditTodo';
 
 const ListTodos = ({ description, setDescription, setEditMode }) => {
   const [todos, setTodos] = useState([]);
+  const [filter, setFilter] = useState('All'); // Menyimpan filter yang dipilih
 
   const onDeleteHandler = (event, id) => {
     event.stopPropagation();
@@ -68,10 +69,41 @@ const ListTodos = ({ description, setDescription, setEditMode }) => {
     }
   };
 
+  const clearCompletedHandler = async () => {
+    try {
+      // Hapus semua todo yang memiliki completed true
+      const completedTodos = todos.filter((todo) => todo.completed);
+      for (let todo of completedTodos) {
+        await deleteTodo(todo.todo_id);
+      }
+    } catch (error) {
+      console.error(error.message);
+    }
+  };
+
+  // Filter todos based on the selected filter
+  const filteredTodos = todos.filter((todo) => {
+    if (filter === 'All') return true;
+    if (filter === 'Active') return !todo.completed;
+    if (filter === 'Completed') return todo.completed;
+  });
+
+  const buttonAllHandler = () => {
+    setFilter('All');
+  };
+  const buttonActiveHandler = () => {
+    setFilter('Active');
+  };
+  const buttonCompletedHandler = () => {
+    setFilter('Completed');
+  };
+
+  const itemsLeft = todos.filter((todo) => !todo.completed).length;
+
   return (
     <div className="flex flex-col items-center ">
       <div className="rounded-lg z-[2] overflow-hidden ">
-        {todos.map((todo) => {
+        {filteredTodos.map((todo) => {
           return (
             <div
               key={todo.todo_id}
@@ -119,7 +151,44 @@ const ListTodos = ({ description, setDescription, setEditMode }) => {
             </div>
           );
         })}
+        <div className="bg-[#25273c] w-[327px] text-sm flex text-[#cacde8] p-4 justify-between">
+          <p>{itemsLeft} items left</p>
+          <button className="hover:text-white" onClick={clearCompletedHandler}>
+            Clear Completed
+          </button>
+        </div>
       </div>
+
+      <div className="gap-x-3 mt-4 rounded-lg w-[327px] p-3 bg-[#25273c] flex justify-center text-[#cacde8]">
+        <button
+          className={`hover:text-white ${
+            filter === 'All' ? 'text-[#3a7bfd]' : ''
+          }`}
+          onClick={buttonAllHandler}
+        >
+          All
+        </button>
+        <button
+          className={`hover:text-white ${
+            filter === 'Active' ? 'text-[#3a7bfd]' : ''
+          }`}
+          onClick={buttonActiveHandler}
+        >
+          Active
+        </button>
+        <button
+          className={`hover:text-white ${
+            filter === 'Completed' ? 'text-[#3a7bfd]' : ''
+          }`}
+          onClick={buttonCompletedHandler}
+        >
+          Completed
+        </button>
+      </div>
+
+      <h1 className="text-[#cacde8] text-sm mt-4">
+        Drag and drop to reorder list
+      </h1>
     </div>
   );
 };

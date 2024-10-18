@@ -2,6 +2,7 @@ import InputTodo from './components/InputTodo';
 import TopComponent from './components/TopComponent';
 import ListTodos from './components/ListTodos';
 import { useState } from 'react';
+import './App.css';
 
 function App() {
   const [description, setDescription] = useState('');
