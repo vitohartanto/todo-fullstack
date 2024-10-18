@@ -1,15 +1,26 @@
 import { useEffect, useState } from 'react';
 import React from 'react';
-import IconCross from '../images/icon-cross.svg';
-import IconCheck from '../images/icon-check.svg';
-import EditTodo from './EditTodo';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import SortableItem from './SortableItem';
+import { DragOverlay } from '@dnd-kit/core';
 
 const ListTodos = ({ description, setDescription, setEditMode }) => {
   const [todos, setTodos] = useState([]);
   const [filter, setFilter] = useState('All'); // Menyimpan filter yang dipilih
+  const [activeId, setActiveId] = useState(null); // Untuk menyimpan item yang sedang di-drag
 
   const onDeleteHandler = (event, id) => {
     event.stopPropagation();
+    console.log('onDeleteHandler triggered');
+
+    // Optimistic UI update
+    setTodos((prevTodos) => prevTodos.filter((todo) => todo.todo_id !== id));
+
     deleteTodo(id);
   };
 
@@ -31,9 +42,7 @@ const ListTodos = ({ description, setDescription, setEditMode }) => {
   const getTodos = async () => {
     const response = await fetch('http://localhost:5000/todos');
     const parsedJson = await response.json();
-
     console.log(parsedJson);
-
     setTodos(parsedJson);
   };
 
@@ -41,7 +50,9 @@ const ListTodos = ({ description, setDescription, setEditMode }) => {
     getTodos();
   }, []);
 
-  const onCompletedHandler = (id, currentStatus) => {
+  const onCompletedHandler = (event, id, currentStatus) => {
+    event.stopPropagation();
+    console.log('onCompletedHandler triggered');
     completeTodo(id, currentStatus);
   };
 
@@ -100,57 +111,80 @@ const ListTodos = ({ description, setDescription, setEditMode }) => {
 
   const itemsLeft = todos.filter((todo) => !todo.completed).length;
 
+  const handleDragStart = (event) => {
+    setActiveId(event.active.id); // Menyimpan id item yang sedang di-drag
+  };
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    setActiveId(null); // Reset item yang sedang di-drag
+    if (active.id !== over.id) {
+      setTodos((prevTodos) => {
+        const oldIndex = prevTodos.findIndex(
+          (todo) => todo.todo_id === active.id
+        );
+        const newIndex = prevTodos.findIndex(
+          (todo) => todo.todo_id === over.id
+        );
+        const newTodos = arrayMove(prevTodos, oldIndex, newIndex);
+
+        // Kirim urutan baru ke server
+        updateTodoOrder(newTodos);
+
+        return newTodos;
+      });
+    }
+  };
+
+  const updateTodoOrder = async (newTodos) => {
+    try {
+      await fetch('http://localhost:5000/todos/reorder', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ todos: newTodos }),
+      });
+    } catch (error) {
+      console.error('Error updating order:', error.message);
+    }
+  };
   return (
     <div className="flex flex-col items-center ">
       <div className="rounded-lg z-[2] overflow-hidden ">
-        {filteredTodos.map((todo) => {
-          return (
-            <div
-              key={todo.todo_id}
-              onClick={() => onCompletedHandler(todo.todo_id, todo.completed)}
-              className="hover:cursor-pointer relative border-b border-[#777a92] items-center  p-3 w-[327px] bg-[#25273c] text-[#cacde8] flex justify-between"
-            >
-              {todo.completed === false ? (
-                <div
-                  className="absolute border-[#777a92] bg-transparent border-2 w-5 h-5 rounded-full"
-                  onClick={() =>
-                    onCompletedHandler(todo.todo_id, todo.completed)
-                  }
-                />
-              ) : (
-                <div className="absolute bg-gradient-custom border-2 w-5 h-5 rounded-full">
-                  <img
-                    src={IconCheck}
-                    alt="checklist"
-                    className="absolute top-1 left-[3px]"
-                  />
-                </div>
-              )}
-
-              <div className="flex w-full justify-between">
-                {todo.completed === false ? (
-                  <p className="pl-8">{todo.description}</p>
-                ) : (
-                  <p className="pl-8">
-                    <s>{todo.description}</s>
-                  </p>
-                )}
-
-                <EditTodo
+        <DndContext
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={filteredTodos}
+            strategy={verticalListSortingStrategy}
+          >
+            {filteredTodos.map((todo) => {
+              return (
+                <SortableItem
+                  key={todo.todo_id}
                   todo={todo}
+                  onCompletedHandler={onCompletedHandler}
+                  onDeleteHandler={onDeleteHandler}
                   setDescription={setDescription}
                   setEditMode={setEditMode}
                 />
-              </div>
-              <button
-                className=""
-                onClick={(event) => onDeleteHandler(event, todo.todo_id)}
-              >
-                <img src={IconCross} alt="X" />
-              </button>
-            </div>
-          );
-        })}
+              );
+            })}
+          </SortableContext>
+
+          {/* DragOverlay untuk menampilkan bayangan */}
+          <DragOverlay>
+            {activeId ? (
+              <SortableItem
+                todo={todos.find((todo) => todo.todo_id === activeId)}
+                isOverlay={true} // Misalnya, bisa digunakan untuk memberi style berbeda pada overlay
+              />
+            ) : null}
+          </DragOverlay>
+        </DndContext>
         <div className="bg-[#25273c] w-[327px] text-sm flex text-[#cacde8] p-4 justify-between">
           <p>{itemsLeft} items left</p>
           <button className="hover:text-white" onClick={clearCompletedHandler}>
